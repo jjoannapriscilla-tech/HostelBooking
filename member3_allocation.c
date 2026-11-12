@@ -216,7 +216,9 @@ void saveData(void)
         printf("Hostel data saved successfully.\n");
 
     fclose(fp);
+    exportDashboardData();
 }
+
 
 /* Load hostel data */
 void loadData(void)
@@ -234,5 +236,56 @@ void loadData(void)
     else
         printf("Hostel data loaded successfully.\n");
 
+    fclose(fp);
+}
+/* Export room information for the web dashboard */
+void exportDashboardData(void)
+{
+    FILE *fp = fopen("dashboard.json", "w");
+
+    if (fp == NULL)
+    {
+        printf("Could not create dashboard.json\n");
+        return;
+    }
+
+    fprintf(fp, "{ \"initialized\": %s, \"blocks\": [",
+            hostel.roomsInitialized ? "true" : "false");
+
+    for (int b = 0; b < BLOCKS; b++)
+    {
+        if (b > 0) fprintf(fp, ",");
+
+        fprintf(fp, "{\"name\":\"%c\",\"type\":\"%s\",\"floors\":[",
+                'A' + b, b < 2 ? "Boys" : "Girls");
+
+        for (int f = 0; f < FLOORS; f++)
+        {
+            if (f > 0) fprintf(fp, ",");
+
+            fprintf(fp, "{\"number\":%d,\"rooms\":[", f + 1);
+
+            for (int r = 0; r < ROOMS_PER_FLOOR; r++)
+            {
+                Room room = hostel.rooms[b][f][r];
+
+                if (r > 0) fprintf(fp, ",");
+
+                fprintf(fp,
+                    "{\"number\":%d,\"capacity\":%d,\"occupied\":%d,\"vacant\":%d,\"ac\":%s}",
+                    room.roomNumber,
+                    room.capacity,
+                    room.occupied,
+                    room.capacity - room.occupied,
+                    room.isAC ? "true" : "false");
+            }
+
+            fprintf(fp, "]}");
+        }
+
+        fprintf(fp, "]}");
+    }
+
+    fprintf(fp, "]}\n");
     fclose(fp);
 }

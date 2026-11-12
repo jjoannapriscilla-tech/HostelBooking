@@ -64,6 +64,7 @@ void sortStudentsByName(void);
 void initializeRooms(void);
 void displayRoomDetails(void);
 void displayVacantRooms(void);
+void deleteStudent(void);
 int findRoom(char block, int floor, int roomNumber,
              int *blockIndex, int *floorIndex, int *roomIndex);
 
@@ -73,5 +74,6 @@ void cancelAllocation(void);
 void displayAllocationRecords(void);
 void saveData(void);
 void loadData(void);
-
+void exportDashboardData(void);
 #endif
+ 

@@ -32,6 +32,7 @@ void displayMenu(void)
     printf("8. Allocate Room\n");
     printf("9. Cancel Room Allocation\n");
     printf("10. Display Allocation Records\n");
+    printf("11. Delete Student Entry\n");
 
     printf("\n0. Save and Exit\n");
 
@@ -130,6 +131,9 @@ int main(void)
 
             case 10:
                 displayAllocationRecords();
+                break;
+            case 11:
+                deleteStudent();
                 break;
 
             case 0:

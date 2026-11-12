@@ -140,3 +140,53 @@ void sortStudentsByName(void)
 
     displayStudents();
 }
+void deleteStudent(void)
+{
+    char regNo[20];
+    int index = -1;
+
+    printf("\nEnter Registration Number to Delete: ");
+    scanf("%19s", regNo);
+
+    /* Find student */
+    for (int i = 0; i < hostel.studentCount; i++)
+    {
+        if (strcmp(hostel.students[i].regNo, regNo) == 0)
+        {
+            index = i;
+            break;
+        }
+    }
+
+    if (index == -1)
+    {
+        printf("\nStudent not found!\n");
+        return;
+    }
+
+    /* Check active room allocation */
+    for (int i = 0; i < hostel.allocationCount; i++)
+    {
+        if (strcmp(hostel.allocations[i].regNo, regNo) == 0 &&
+            hostel.allocations[i].active == 1)
+        {
+            printf("\nCannot delete student!");
+            printf("\nCancel the student's room allocation first.\n");
+            return;
+        }
+    }
+
+    printf("\nStudent: %s", hostel.students[index].name);
+
+    /* Shift remaining student records */
+    for (int i = index; i < hostel.studentCount - 1; i++)
+    {
+        hostel.students[i] = hostel.students[i + 1];
+    }
+
+    hostel.studentCount--;
+
+    saveData();
+
+    printf("\nStudent record deleted successfully!\n");
+}

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hostel Room Dashboard</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: "Segoe UI", sans-serif;
+}
+
+body {
+    background: #f4f6fb;
+    color: #26334a;
+    padding: 25px;
+}
+
+header {
+    background: linear-gradient(120deg, #344e85, #748ed1);
+    color: white;
+    padding: 28px;
+    border-radius: 18px;
+    margin-bottom: 25px;
+}
+
+header h1 { font-size: 28px; }
+header p { margin-top: 7px; opacity: .9; }
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat, .panel {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 3px 12px #182b4a12;
+}
+
+.stat h2 { font-size: 27px; margin-top: 8px; }
+.green-text { color: #16a34a; }
+.red-text { color: #dc2626; }
+
+h2.section-title {
+    margin: 25px 0 15px;
+    font-size: 21px;
+}
+
+.blocks {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.block {
+    border: 2px solid transparent;
+    padding: 20px;
+    border-radius: 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: .2s;
+}
+
+.block:hover, .block.active {
+    transform: translateY(-4px);
+    border-color: #64748b;
+}
+
+.block .building { font-size: 38px; margin-bottom: 8px; }
+.boys { background: #dceeff; }
+.girls { background: #fce4ec; }
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 18px 0;
+}
+
+button {
+    border: 0;
+    padding: 10px 18px;
+    border-radius: 9px;
+    background: #e4eaf6;
+    color: #273957;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+button.active {
+    background: #425f9c;
+    color: white;
+}
+
+.rooms {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 14px;
+}
+
+.room {
+    background: white;
+    padding: 15px;
+    border-radius: 13px;
+    box-shadow: 0 3px 10px #182b4a12;
+    cursor: pointer;
+    border: 1px solid #e5eaf2;
+}
+
+.room:hover { border-color: #7188bd; }
+.room h3 { margin-bottom: 10px; }
+
+.beds {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.bed {
+    padding: 9px 4px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 23px;
+}
+
+.bed small {
+    display: block;
+    font-size: 10px;
+    margin-top: 3px;
+    font-weight: 700;
+}
+
+.vacant { background: #dcfce7; color: #15803d; }
+.occupied { background: #fee2e2; color: #dc2626; }
+
+.legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin: 15px 0;
+}
+
+.legend span { font-size: 14px; }
+.dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+footer {
+    text-align: center;
+    color: #64748b;
+    margin-top: 30px;
+    font-size: 13px;
+}
+
+@media(max-width: 700px) {
+    body { padding: 12px; }
+    .summary { grid-template-columns: 1fr; }
+    .blocks { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🏨 Hostel Room Allocation System</h1>
+    <p>Room availability and occupancy dashboard</p>
+</header>
+
+<section class="summary">
+    <div class="stat">
+        <p>Total Rooms</p>
+        <h2 id="totalRooms">0</h2>
+    </div>
+    <div class="stat">
+        <p>Vacant Beds</p>
+        <h2 class="green-text" id="totalVacant">0</h2>
+    </div>
+    <div class="stat">
+        <p>Occupied Beds</p>
+        <h2 class="red-text" id="totalOccupied">0</h2>
+    </div>
+</section>
+
+<h2 class="section-title">Select Hostel Block</h2>
+<section class="blocks" id="blocks"></section>
+
+<section class="panel" style="margin-top:25px">
+    <h2 id="selectedTitle">Select a block</h2>
+
+    <div class="controls" id="floors"></div>
+
+    <div class="legend">
+        <span><i class="dot" style="background:#22c55e"></i>Vacant</span>
+        <span><i class="dot" style="background:#ef4444"></i>Occupied</span>
+    </div>
+
+    <div class="rooms" id="rooms"></div>
+</section>
+
+<footer>
+    Hostel Room Allocation System | Live data from C program
+</footer>
+
+<script>
+let hostel = null;
+let selectedBlock = 0;
+let selectedFloor = 0;
+
+async function loadHostel() {
+    try {
+        const response = await fetch("/api/hostel");
+        hostel = await response.json();
+
+        if (hostel.error) {
+            document.getElementById("selectedTitle").textContent =
+                hostel.error;
+            return;
+        }
+
+        if (!hostel.initialized || !hostel.blocks.length) {
+            document.getElementById("selectedTitle").textContent =
+                "Please initialize hostel rooms in the C program first.";
+            return;
+        }
+
+        renderDashboard();
+    } catch (error) {
+        document.getElementById("selectedTitle").textContent =
+            "Unable to connect to hostel data.";
+    }
+}
+
+function renderDashboard() {
+    let totalRooms = 0;
+    let vacant = 0;
+    let occupied = 0;
+
+    hostel.blocks.forEach(block => {
+        block.floors.forEach(floor => {
+            floor.rooms.forEach(room => {
+                totalRooms++;
+                vacant += room.vacant;
+                occupied += room.occupied;
+            });
+        });
+    });
+
+    document.getElementById("totalRooms").textContent = totalRooms;
+    document.getElementById("totalVacant").textContent = vacant;
+    document.getElementById("totalOccupied").textContent = occupied;
+
+    renderBlocks();
+    renderFloors();
+    renderRooms();
+}
+
+function renderBlocks() {
+    const container = document.getElementById("blocks");
+    container.innerHTML = "";
+
+    hostel.blocks.forEach((block, index) => {
+        const card = document.createElement("div");
+        card.className = "block " +
+            (index < 2 ? "boys" : "girls") +
+            (selectedBlock === index ? " active" : "");
+
+        card.innerHTML = `
+            <div class="building">🏢</div>
+            <h3>Block ${block.name}</h3>
+            <p>${block.type} Hostel</p>
+            <p>${block.floors.length} Floors</p>
+        `;
+
+        card.onclick = () => {
+            selectedBlock = index;
+            selectedFloor = 0;
+            renderDashboard();
+        };
+
+        container.appendChild(card);
+    });
+}
+
+function renderFloors() {
+    const container = document.getElementById("floors");
+    const block = hostel.blocks[selectedBlock];
+
+    document.getElementById("selectedTitle").textContent =
+        `Block ${block.name} – ${block.type} Hostel`;
+
+    container.innerHTML = "";
+
+    block.floors.forEach((floor, index) => {
+        const button = document.createElement("button");
+        button.textContent = `Floor ${floor.number}`;
+
+        if (selectedFloor === index) button.classList.add("active");
+
+        button.onclick = () => {
+            selectedFloor = index;
+            renderFloors();
+            renderRooms();
+        };
+
+        container.appendChild(button);
+    });
+}
+
+function renderRooms() {
+    const container = document.getElementById("rooms");
+    container.innerHTML = "";
+
+    const rooms = hostel.blocks[selectedBlock]
+        .floors[selectedFloor].rooms;
+
+    rooms.forEach(room => {
+        const card = document.createElement("div");
+        card.className = "room";
+
+        let bedsHTML = "";
+
+        for (let i = 0; i < room.capacity; i++) {
+            const isOccupied = i < room.occupied;
+
+            bedsHTML += `
+                <div class="bed ${isOccupied ? "occupied" : "vacant"}">
+                    🛏️
+                    <small>${isOccupied ? "Occupied" : "Vacant"}</small>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <h3>Room ${room.number}</h3>
+            <div class="beds">${bedsHTML}</div>
+            <p style="margin-top:10px;font-size:12px">
+                ${room.occupied}/${room.capacity} occupied
+                ${room.ac ? " • AC" : " • Non-AC"}
+            </p>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+loadHostel();
+setInterval(loadHostel, 5000);
+</script>
+
+</body>
+</html>
